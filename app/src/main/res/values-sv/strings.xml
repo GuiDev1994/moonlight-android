@@ -184,6 +184,9 @@
     <string name="audioconf_stereo">Stereo</string>
     <string name="audioconf_51surround">5.1 surroundljud</string>
     <string name="audioconf_71surround">7.1 surroundljud</string>
+    <string name="title_real_refresh_rate">Verklig skärmsuppdateringshastighet</string>
+    <string name="refresh_rate_unavailable">Ej tillgänglig</string>
+    
     <string name="title_frame_pacing">Videorams fart</string>
     <string name="pacing_latency">Föredrar lägsta latenstid</string>
     <string name="pacing_balanced">Balanserad</string>

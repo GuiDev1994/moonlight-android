@@ -217,6 +217,9 @@
     <!-- Array strings -->
     <string name="videoformat_auto">Автоматичний (рекомендовано)</string>
     <string name="videoformat_hevcalways">Використовувати HEVC</string>
+    <string name="title_real_refresh_rate">Реальна частота оновлення екрана</string>
+    <string name="refresh_rate_unavailable">Недоступно</string>
+    
     <string name="title_frame_pacing">Швидкість кадрів відео</string>
     <string name="summary_frame_pacing">Укажіть баланс відео затримки та плавності</string>
     <string name="pacing_latency">Перевага найменшій затримці</string>

@@ -9,6 +9,11 @@
         android:title="@string/category_video_settings"
         app:initialExpandedChildrenCount="3"
         app:iconSpaceReserved="false">
+        <com.limelight.preferences.RefreshRatePreference
+            android:key="real_refresh_rate"
+            android:title="@string/title_real_refresh_rate"
+            android:summary=""
+            app:iconSpaceReserved="false" />
         <ListPreference
             android:defaultValue="1280x720"
             android:entries="@array/resolution_names"

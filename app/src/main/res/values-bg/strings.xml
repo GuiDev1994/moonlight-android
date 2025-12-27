@@ -81,6 +81,9 @@
     <string name="videoformat_auto">Автоматично</string>
     <string name="videoformat_hevcalways">Винаги използване на HEVC (може да крашне)</string>
     <string name="summary_frame_pacing">Посочете как да се балансира забавянето и плавността на видеото</string>
+    <string name="title_real_refresh_rate">Реална честота на обновяване на екрана</string>
+    <string name="refresh_rate_unavailable">Недостъпно</string>
+    
     <string name="title_frame_pacing">Стъпка на видео кадрите</string>
     <string name="pacing_balanced">Балансирано</string>
     <string name="check_ports_msg">Проверете вашата защитна стена и правилата за препращане на портове за порт(ове):</string>

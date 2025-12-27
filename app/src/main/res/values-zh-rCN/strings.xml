@@ -277,6 +277,9 @@
     <string name="audioconf_71surround">7.1环绕声</string>
     <string name="videoformat_auto">自动（推荐）</string>
     <string name="videoformat_hevcalways">首选 HEVC</string>
+    <string name="title_real_refresh_rate">屏幕实际刷新率</string>
+    <string name="refresh_rate_unavailable">不可用</string>
+    
     <string name="title_frame_pacing">视频帧速调节</string>
     <string name="resolution_360p">360p</string>
     <string name="resolution_480p">480p</string>

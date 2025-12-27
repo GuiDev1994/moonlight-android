@@ -252,6 +252,9 @@
     <string name="fps_30">30 FPS</string>
     <string name="fps_60">60 FPS</string>
     <string name="fps_90">90 FPS</string>
+    <string name="title_real_refresh_rate">Tasa de actualización real de la pantalla</string>
+    <string name="refresh_rate_unavailable">No disponible</string>
+    
     <string name="title_frame_pacing">Ritmo de cuadros por segundo en video</string>
     <string name="resolution_prefix_native_portrait">(Retrato)</string>
     <string name="frame_conversion_error">El PC anfitrión ha reportado un error fatal en el codificador de video.

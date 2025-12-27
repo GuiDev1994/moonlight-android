@@ -229,6 +229,9 @@
 \n
 \nPróbálja meg letiltani a HDR módot, megváltoztatni a streaming felbontást, vagy megváltoztatni a host PC kijelzőjének felbontását.</string>
     <string name="summary_checkbox_gamepad_touchpad_as_mouse">Kényszeríti a gamepad touchpad bevitelét a host egér vezérlésére, még akkor is, ha egy touchpaddal ellátott gamepadot emulál.</string>
+    <string name="title_real_refresh_rate">Valós képernyő-frissítési sebesség</string>
+    <string name="refresh_rate_unavailable">Nem elérhető</string>
+    
     <string name="title_frame_pacing">Videó képkocka ütemezése</string>
     <string name="resolution_1440p">1440p</string>
     <string name="resolution_480p">480p</string>

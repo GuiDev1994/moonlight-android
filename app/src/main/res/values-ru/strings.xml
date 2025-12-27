@@ -272,6 +272,9 @@
     <string name="title_checkbox_reduce_refresh_rate">Разрешить снижение частоты обновления</string>
     <string name="resolution_4k">4K</string>
     <string name="fps_30">30 FPS</string>
+    <string name="title_real_refresh_rate">Реальная частота обновления экрана</string>
+    <string name="refresh_rate_unavailable">Недоступно</string>
+    
     <string name="title_frame_pacing">Скорость вывода/отрисовки кадра</string>
     <string name="pacing_balanced_alt">Сбалансированно с лимитом FPS</string>
     <string name="resolution_480p">480p</string>

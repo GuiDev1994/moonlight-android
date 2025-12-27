@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="title_real_refresh_rate">Taxa de atualização real da tela</string>
+    <string name="refresh_rate_unavailable">Indisponível</string>
+    
     <string name="title_frame_pacing">Ritmo de quadros</string>
     <string name="pacing_balanced">Balanceado</string>
     <string name="pacing_latency">Preferir baixa latência</string>

@@ -177,6 +177,9 @@
     <string name="applist_refresh_msg">Odświeżanie aplikacji…</string>
     <string name="addpc_enter_ip">Należy wprowadzić adres IP</string>
     <string name="category_audio_settings">Ustawienia audio</string>
+    <string name="title_real_refresh_rate">Rzeczywista częstotliwość odświeżania ekranu</string>
+    <string name="refresh_rate_unavailable">Niedostępne</string>
+    
     <string name="title_frame_pacing">Tempo klatek wideo</string>
     <string name="pacing_balanced">Zrównoważone</string>
     <string name="no">Nie</string>

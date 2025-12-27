@@ -211,6 +211,9 @@
     <string name="audioconf_71surround">Surround 7.1</string>
     <string name="videoformat_auto">Automatico (Consigliato)</string>
     <string name="videoformat_hevcalways">Preferisci HEVC</string>
+    <string name="title_real_refresh_rate">Frequenza di aggiornamento reale dello schermo</string>
+    <string name="refresh_rate_unavailable">Non disponibile</string>
+    
     <string name="title_frame_pacing">Bilanciamento frame video</string>
     <string name="summary_frame_pacing">Specifica come bilanciare il ritardo video e la fluidità</string>
     <string name="summary_enable_perf_overlay">Mostra informazioni real time sulla trasmissione</string>

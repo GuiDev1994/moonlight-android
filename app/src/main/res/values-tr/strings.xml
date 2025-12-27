@@ -242,6 +242,9 @@
     <string name="fps_90">90 FPS</string>
     <string name="fps_120">120 FPS</string>
     <string name="audioconf_stereo">Stereo</string>
+    <string name="title_real_refresh_rate">Gerçek ekran yenileme hızı</string>
+    <string name="refresh_rate_unavailable">Kullanılamıyor</string>
+    
     <string name="title_frame_pacing">Video kare ilerleme hızı</string>
     <string name="summary_frame_pacing">Video gecikmesinin ve akıcılığının nasıl dengeleneceğini belirtin</string>
     <string name="pacing_latency">Düşük gecikmeyi tercih et</string>

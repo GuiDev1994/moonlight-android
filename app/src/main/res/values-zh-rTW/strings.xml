@@ -352,6 +352,9 @@
 	<string name="videoformat_hevcalways">優先使用 HEVC</string>
 	<string name="videoformat_h264always">優先使用 H.264</string>
 
+	<string name="title_real_refresh_rate">螢幕實際刷新率</string>
+	<string name="refresh_rate_unavailable">不可用</string>
+	
 	<string name="title_frame_pacing">影片幀律控制</string>
 	<string name="summary_frame_pacing">指定如何在影片延遲與流暢度之間取得平衡</string>
 	<string name="pacing_warp">Warp Drive（實驗性）</string>

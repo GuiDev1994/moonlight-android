@@ -218,6 +218,9 @@
     <!-- Array strings -->
     <string name="videoformat_auto">Automatisch</string>
     <string name="videoformat_hevcalways">HEVC bevorzugen</string>
+    <string name="title_real_refresh_rate">Echte Bildschirmaktualisierungsrate</string>
+    <string name="refresh_rate_unavailable">Nicht verfügbar</string>
+    
     <string name="title_frame_pacing">Video Frame-Pacing</string>
     <string name="summary_frame_pacing">Lege fest, wie die Videolatenz und die flüssige Wiedergabe ausgeglichen werden sollen</string>
     <string name="resolution_prefix_native_fullscreen">Natives Vollbild</string>

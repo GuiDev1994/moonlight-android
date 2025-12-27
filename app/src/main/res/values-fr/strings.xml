@@ -319,6 +319,9 @@
     <string name="videoformat_hevcalways">Préférer HEVC</string>
     <string name="videoformat_h264always">Préférer H.264</string>
 
+    <string name="title_real_refresh_rate">Taux de rafraîchissement réel de l\'écran</string>
+    <string name="refresh_rate_unavailable">Indisponible</string>
+    
     <string name="title_frame_pacing">Frame-pacing vidéo</string>
     <string name="summary_frame_pacing">Spécifiez comment équilibrer latence et fluidité de la vidéo</string>
     <string name="pacing_warp">Warp Drive (expérimental)</string>
