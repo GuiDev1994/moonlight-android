@@ -39,6 +39,7 @@ import com.limelight.nvstream.input.MouseButtonPacket;
 import com.limelight.nvstream.jni.MoonBridge;
 import com.limelight.preferences.GlPreferences;
 import com.limelight.preferences.PreferenceConfiguration;
+import com.limelight.preferences.RefreshRatePreference;
 import com.limelight.profiles.ProfilesManager;
 import com.limelight.ui.ExternalControllerView;
 import com.limelight.ui.GameGestures;
@@ -748,12 +749,36 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
 
         // Set to the optimal mode for streaming
         float displayRefreshRate = prepareDisplayForRendering(currentDisplay);
+        
+        // If auto refresh rate is enabled, override with the measured refresh rate
+        if (prefConfig.autoRefreshRate) {
+            float autoRefreshRate = RefreshRatePreference.getCurrentRefreshRateSync(this);
+            if (autoRefreshRate > 0) {
+                displayRefreshRate = autoRefreshRate;
+                // Show toast with the found refresh rate
+                final float finalRefreshRate = autoRefreshRate;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String message = String.format(Locale.getDefault(), 
+                            getString(R.string.toast_auto_refresh_rate_found), finalRefreshRate);
+                        Toast.makeText(Game.this, message, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }
+        
         LimeLog.info("Display refresh rate: "+displayRefreshRate);
 
         // If the user requested frame pacing using a capped FPS, we will need to change our
         // desired FPS setting here in accordance with the active display refresh rate.
         int roundedRefreshRate = Math.round(displayRefreshRate);
         float chosenFrameRate = prefConfig.fps;
+        
+        // If auto refresh rate is enabled, use the measured refresh rate as the frame rate
+        if (prefConfig.autoRefreshRate && displayRefreshRate > 0) {
+            chosenFrameRate = displayRefreshRate;
+        }
         if (prefConfig.framePacing == PreferenceConfiguration.FRAME_PACING_CAP_FPS) {
             if (prefConfig.fps >= roundedRefreshRate) {
                 if (prefConfig.fps > roundedRefreshRate + 3) {
@@ -776,12 +801,17 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             chosenFrameRate *= prefConfig.framePacingWarpFactor;
         }
 
+        // Use auto refresh rate for launch if enabled
+        float launchRefreshRate = prefConfig.autoRefreshRate && displayRefreshRate > 0 
+            ? displayRefreshRate 
+            : prefConfig.fps;
+        
         StreamConfiguration config = new StreamConfiguration.Builder()
                 .setResolution(
                         displayWidth,
                         displayHeight
                 )
-                .setLaunchRefreshRate(prefConfig.fps)
+                .setLaunchRefreshRate(launchRefreshRate)
                 .setRefreshRate(chosenFrameRate)
                 .setVirtualDisplay(vDisplay)
                 .setResolutionScaleFactor(prefConfig.resolutionScaleFactor)

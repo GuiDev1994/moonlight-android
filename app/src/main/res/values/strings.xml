@@ -354,6 +354,9 @@
 
     <string name="title_real_refresh_rate">Real screen refresh rate</string>
     <string name="refresh_rate_unavailable">Unavailable</string>
+    <string name="title_auto_refresh_rate">Auto refresh rate</string>
+    <string name="summary_auto_refresh_rate">Automatically use the maximum screen refresh rate, disabling the frame rate and custom refresh rate options</string>
+    <string name="toast_auto_refresh_rate_found">Auto refresh rate found: %.2f fps</string>
     
     <string name="title_frame_pacing">Video frame pacing</string>
     <string name="summary_frame_pacing">Specify how to balance video latency and smoothness</string>

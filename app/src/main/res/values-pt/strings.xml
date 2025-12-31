@@ -131,6 +131,9 @@
     <string name="videoformat_auto">Automático (recomendado)</string>
     <string name="title_real_refresh_rate">Taxa de atualização real do ecrã</string>
     <string name="refresh_rate_unavailable">Indisponível</string>
+    <string name="title_auto_refresh_rate">Taxa de atualização automática</string>
+    <string name="summary_auto_refresh_rate">Usa automaticamente a taxa de atualização máxima da tela, desabilitando as opções de taxa de quadros e taxa de atualização personalizada</string>
+    <string name="toast_auto_refresh_rate_found">Taxa de atualização automática encontrada: %.2f fps</string>
     
     <string name="title_frame_pacing">Ritmo de quadros</string>
     <string name="pacing_smoothness">Preferir vídeo mais suave (pode aumentar significativamente a latência)</string>

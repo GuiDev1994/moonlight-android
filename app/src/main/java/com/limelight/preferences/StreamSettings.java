@@ -725,6 +725,35 @@ public class StreamSettings extends AppCompatActivity {
                 }
             });
 
+            // Add listener for auto refresh rate checkbox to enable/disable FPS and custom refresh rate
+            CheckBoxPreference autoRefreshRatePref = (CheckBoxPreference) findPreference("checkbox_auto_refresh_rate");
+            Preference fpsPref = findPreference(PreferenceConfiguration.FPS_PREF_STRING);
+            
+            // Set initial state for FPS
+            boolean autoRefreshRateEnabled = getPrefs().getBoolean("checkbox_auto_refresh_rate", false);
+            if (fpsPref != null) {
+                fpsPref.setEnabled(!autoRefreshRateEnabled);
+            }
+            
+            // Set up listener for auto refresh rate (customRefreshRatePref will be handled in its own section below)
+            if (autoRefreshRatePref != null) {
+                autoRefreshRatePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                    @Override
+                    public boolean onPreferenceChange(Preference preference, Object newValue) {
+                        boolean enabled = (Boolean) newValue;
+                        if (fpsPref != null) {
+                            fpsPref.setEnabled(!enabled);
+                        }
+                        // Find and update custom refresh rate preference
+                        Preference customRefreshRatePref = findPreference(PreferenceConfiguration.CUSTOM_REFRESH_RATE_PREF_STRING);
+                        if (customRefreshRatePref != null) {
+                            customRefreshRatePref.setEnabled(!enabled);
+                        }
+                        return true;
+                    }
+                });
+            }
+
             findPreference("checkbox_enable_perf_logging").setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                 @Override
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
@@ -923,6 +952,9 @@ public class StreamSettings extends AppCompatActivity {
 
             EditTextPreference customRefreshRatePref = findPreference(PreferenceConfiguration.CUSTOM_REFRESH_RATE_PREF_STRING);
             if (customRefreshRatePref != null) {
+                // Set initial enabled state based on auto refresh rate setting
+                customRefreshRatePref.setEnabled(!autoRefreshRateEnabled);
+                
                 customRefreshRatePref.setOnBindEditTextListener((EditText editText) -> {
                     editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
                     editText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(7)});

@@ -33,6 +33,7 @@ public class PreferenceConfiguration {
     public static final String CUSTOM_BITRATE_PREF_STRING = "edit_diy_bitrate";
     public static final String CUSTOM_REFRESH_RATE_PREF_STRING = "custom_refresh_rate";
     public static final String CUSTOM_RESOLUTION_PREF_STRING = "edit_diy_w_h";
+    private static final String AUTO_REFRESH_RATE_PREF_STRING = "checkbox_auto_refresh_rate";
 
     private static final String LEGACY_RES_FPS_PREF_STRING = "list_resolution_fps";
     private static final String LEGACY_ENABLE_51_SURROUND_PREF_STRING = "checkbox_51_surround";
@@ -163,6 +164,7 @@ public class PreferenceConfiguration {
     private static final boolean SHOW_GUIDE_BUTTON_DEFAULT = true;
     private static final boolean DEFAULT_ENABLE_HDR = false;
     private static final boolean DEFAULT_ENABLE_PIP = false;
+    private static final boolean DEFAULT_AUTO_REFRESH_RATE = false;
     private static final boolean DEFAULT_ENABLE_PERF_OVERLAY = false;
     private static final boolean DEFAULT_PERF_OVERLAY_BOTTOM = false;
     private static final boolean DEFAULT_ENABLE_PERF_LOGGING = false;
@@ -264,6 +266,7 @@ public class PreferenceConfiguration {
     public boolean showGuideButton;
     public boolean enableHdr;
     public boolean enablePip;
+    public boolean autoRefreshRate;
 
     public float parallax_depth;
 
@@ -920,6 +923,7 @@ private static int getFramePacingValue(Context context) {
         config.showGuideButton = prefs.getBoolean(SHOW_GUIDE_BUTTON_PREF_STRING, SHOW_GUIDE_BUTTON_DEFAULT);
         config.enableHdr = prefs.getBoolean(ENABLE_HDR_PREF_STRING, DEFAULT_ENABLE_HDR) && !isShieldAtvFirmwareWithBrokenHdr();
         config.enablePip = prefs.getBoolean(ENABLE_PIP_PREF_STRING, DEFAULT_ENABLE_PIP);
+        config.autoRefreshRate = prefs.getBoolean(AUTO_REFRESH_RATE_PREF_STRING, DEFAULT_AUTO_REFRESH_RATE);
         config.enablePerfOverlay = prefs.getBoolean(ENABLE_PERF_OVERLAY_STRING, DEFAULT_ENABLE_PERF_OVERLAY);
         config.enablePerfLogging = prefs.getBoolean(ENABLE_PERF_LOGGING, DEFAULT_ENABLE_PERF_LOGGING);
         config.enablePerfOverlayLite = prefs.getBoolean("checkbox_enable_perf_overlay_lite",DEFAULT_ENABLE_PERF_OVERLAY);
