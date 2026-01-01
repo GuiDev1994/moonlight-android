@@ -66,13 +66,47 @@ public class RefreshRatePreference extends Preference implements Choreographer.F
         choreographer.postFrameCallback(this);
     }
 
+    /**
+     * Custom rounding logic for refresh rates:
+     * - If between 120 and 121, round to 120
+     * - If between 117 and 118, round to 118
+     * - Otherwise, use standard rounding
+     */
+    private float roundRefreshRate(float rate) {
+        if (rate >= 120.0f && rate < 121.0f) {
+            return 120.0f;
+        } else if (rate >= 117.0f && rate < 118.0f) {
+            return 118.0f;
+        } else {
+            return Math.round(rate);
+        }
+    }
+
     private void updateSummary() {
         if (currentRefreshRate > 0) {
-            String summary = String.format(Locale.US, "%.2f Hz", currentRefreshRate);
+            float roundedRate = roundRefreshRate(currentRefreshRate);
+            // Display the rounded value (integer) instead of decimal
+            String summary = String.format(Locale.US, "%.0f Hz", roundedRate);
             setSummary(summary);
-            staticRefreshRate = currentRefreshRate;
+            staticRefreshRate = roundedRate;
         } else {
             setSummary(getContext().getString(R.string.refresh_rate_unavailable));
+        }
+    }
+
+    /**
+     * Custom rounding logic for refresh rates:
+     * - If between 120 and 121, round to 120
+     * - If between 117 and 118, round to 118
+     * - Otherwise, use standard rounding
+     */
+    private static float roundRefreshRateStatic(float rate) {
+        if (rate >= 120.0f && rate < 121.0f) {
+            return 120.0f;
+        } else if (rate >= 117.0f && rate < 118.0f) {
+            return 118.0f;
+        } else {
+            return Math.round(rate);
         }
     }
 
@@ -82,7 +116,7 @@ public class RefreshRatePreference extends Preference implements Choreographer.F
      * Otherwise, falls back to the maximum supported refresh rate from Display.
      * 
      * @param context The context to get the display from
-     * @return The refresh rate in Hz, or 0 if unavailable
+     * @return The refresh rate in Hz (rounded according to custom logic), or 0 if unavailable
      */
     public static float getCurrentRefreshRateSync(Context context) {
         if (staticRefreshRate > 0) {
@@ -120,7 +154,7 @@ public class RefreshRatePreference extends Preference implements Choreographer.F
                         }
                     }
                     
-                    return maxRefreshRate;
+                    return roundRefreshRateStatic(maxRefreshRate);
                 }
             }
         } catch (Exception e) {
