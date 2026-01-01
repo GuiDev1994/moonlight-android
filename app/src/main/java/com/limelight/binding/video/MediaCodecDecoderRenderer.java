@@ -41,7 +41,9 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.util.Range;
 import android.view.Choreographer;
+import android.view.Display;
 import android.view.Surface;
+import android.view.WindowManager;
 
 public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements Choreographer.FrameCallback {
     // Latency profile: favor minimal end-to-end delay over absolute smoothness.
@@ -516,6 +518,31 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
             return MoonBridge.COLOR_RANGE_FULL;
         }
         else {
+            // For Samsung devices with HDR+ (like Galaxy Z Fold7), prefer full range
+            // to improve chroma subsampling and reduce banding (4:4:4 or 4:2:2 instead of 4:2:0)
+            boolean isSamsung = Build.MANUFACTURER != null && Build.MANUFACTURER.equalsIgnoreCase("samsung");
+            if (isSamsung && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // Check if device supports HDR10+ (Android 11+)
+                try {
+                    WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+                    if (wm != null) {
+                        Display display = wm.getDefaultDisplay();
+                        if (display != null) {
+                            Display.HdrCapabilities hdrCaps = display.getHdrCapabilities();
+                            if (hdrCaps != null) {
+                                for (int hdrType : hdrCaps.getSupportedHdrTypes()) {
+                                    if (hdrType == 6) { // HDR_TYPE_HDR10_PLUS = 6
+                                        LimeLog.info("Samsung device with HDR10+ detected, using full color range for better chroma subsampling");
+                                        return MoonBridge.COLOR_RANGE_FULL;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // Ignore
+                }
+            }
             return MoonBridge.COLOR_RANGE_LIMITED;
         }
     }
@@ -548,8 +575,9 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
 
         // Android 7.0 adds color options to the MediaFormat
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            int colorRange = getPreferredColorRange();
             videoFormat.setInteger(MediaFormat.KEY_COLOR_RANGE,
-                    getPreferredColorRange() == MoonBridge.COLOR_RANGE_FULL ?
+                    colorRange == MoonBridge.COLOR_RANGE_FULL ?
                             MediaFormat.COLOR_RANGE_FULL : MediaFormat.COLOR_RANGE_LIMITED);
 
             // If the stream is HDR-capable, the decoder will detect transitions in color standards
@@ -568,6 +596,12 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
                         videoFormat.setInteger(MediaFormat.KEY_COLOR_STANDARD, MediaFormat.COLOR_STANDARD_BT2020);
                         break;
                 }
+            } else {
+                // For HDR streams, prefer full color range to improve chroma subsampling (4:4:4 or 4:2:2)
+                // This helps reduce banding, especially on Samsung devices with HDR10+
+                if (colorRange == MoonBridge.COLOR_RANGE_FULL) {
+                    LimeLog.info("Using full color range for HDR stream to improve chroma subsampling");
+                }
             }
         }
 
@@ -578,9 +612,62 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
         // Set HDR metadata if present
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             if (currentHdrMetadata != null) {
-                ByteBuffer hdrStaticInfo = ByteBuffer.allocate(25).order(ByteOrder.LITTLE_ENDIAN);
                 ByteBuffer hdrMetadata = ByteBuffer.wrap(currentHdrMetadata).order(ByteOrder.LITTLE_ENDIAN);
-
+                
+                // Check if device supports HDR10+ (Android 11+)
+                boolean supportsHdr10Plus = false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    try {
+                        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+                        if (wm != null) {
+                            Display display = wm.getDefaultDisplay();
+                            if (display != null) {
+                                Display.HdrCapabilities hdrCaps = display.getHdrCapabilities();
+                                if (hdrCaps != null) {
+                                    for (int hdrType : hdrCaps.getSupportedHdrTypes()) {
+                                        if (hdrType == 6) { // HDR_TYPE_HDR10_PLUS = 6
+                                            supportsHdr10Plus = true;
+                                            LimeLog.info("Device supports HDR10+, configuring for HDR10+ metadata");
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Ignore
+                    }
+                }
+                
+                if (supportsHdr10Plus && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    // For HDR10+, we can pass dynamic metadata if available
+                    // The server should provide HDR10+ metadata in the hdrMetadata byte array
+                    // For now, we'll still set static info, but the decoder may use HDR10+ if supported
+                    try {
+                        // Try to set HDR10+ info if the key exists (Android 11+)
+                        // Note: KEY_HDR10_PLUS_INFO may not be available in all Android versions
+                        // The metadata format for HDR10+ follows ST 2094-40 standard
+                        ByteBuffer hdr10PlusInfo = ByteBuffer.allocate(currentHdrMetadata.length).order(ByteOrder.LITTLE_ENDIAN);
+                        hdr10PlusInfo.put(currentHdrMetadata);
+                        hdr10PlusInfo.rewind();
+                        
+                        // Try to set HDR10+ metadata (this may fail on devices that don't support it)
+                        try {
+                            format.setByteBuffer("hdr10-plus-info", hdr10PlusInfo);
+                            LimeLog.info("Set HDR10+ metadata");
+                        } catch (Exception e) {
+                            // Fall back to static HDR10 metadata
+                            LimeLog.info("HDR10+ metadata not supported, using HDR10 static metadata");
+                        }
+                    } catch (Exception e) {
+                        // Ignore
+                    }
+                }
+                
+                // Always set HDR10 static metadata as fallback
+                ByteBuffer hdrStaticInfo = ByteBuffer.allocate(25).order(ByteOrder.LITTLE_ENDIAN);
+                hdrMetadata.rewind(); // Reset position
+                
                 // Create a HDMI Dynamic Range and Mastering InfoFrame as defined by CTA-861.3
                 hdrStaticInfo.put((byte) 0); // Metadata type
                 hdrStaticInfo.putShort(hdrMetadata.getShort()); // RX

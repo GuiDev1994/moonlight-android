@@ -639,17 +639,23 @@ public class StreamSettings extends AppCompatActivity {
             else {
                 Display.HdrCapabilities hdrCaps = display.getHdrCapabilities();
                 Log.d("HDR CAP", display + "");
-                // We must now ensure our display is compatible with HDR10
-                boolean foundHdr10 = false;
-                if (hdrCaps != null) {
-                    // getHdrCapabilities() returns null on Lenovo Lenovo Mirage Solo (vega), Android 8.0
-                    for (int hdrType : hdrCaps.getSupportedHdrTypes()) {
-                        if (hdrType == Display.HdrCapabilities.HDR_TYPE_HDR10) {
-                            foundHdr10 = true;
-                            break;
+                    // We must now ensure our display is compatible with HDR10 or HDR10+
+                    boolean foundHdr10 = false;
+                    if (hdrCaps != null) {
+                        // getHdrCapabilities() returns null on Lenovo Lenovo Mirage Solo (vega), Android 8.0
+                        for (int hdrType : hdrCaps.getSupportedHdrTypes()) {
+                            if (hdrType == Display.HdrCapabilities.HDR_TYPE_HDR10) {
+                                foundHdr10 = true;
+                                break;
+                            }
+                            // HDR10+ support (Android 11+)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && hdrType == 6) { // HDR_TYPE_HDR10_PLUS = 6
+                                foundHdr10 = true;
+                                LimeLog.info("Display supports HDR10+");
+                                break;
+                            }
                         }
                     }
-                }
 
                 if (!foundHdr10) {
                     LimeLog.info("Excluding HDR toggle based on display capabilities");

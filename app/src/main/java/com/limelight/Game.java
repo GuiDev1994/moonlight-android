@@ -609,7 +609,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     Display.HdrCapabilities hdrCaps = currentDisplay.getHdrCapabilities();
 
-                    // We must now ensure our display is compatible with HDR10
+                    // We must now ensure our display is compatible with HDR10 or HDR10+
                     if (hdrCaps != null) {
                         // getHdrCapabilities() returns null on Lenovo Lenovo Mirage Solo (vega), Android 8.0
                         for (int hdrType : hdrCaps.getSupportedHdrTypes()) {
@@ -617,12 +617,18 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                                 willStreamHdr = true;
                                 break;
                             }
+                            // HDR10+ support (Android 11+)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && hdrType == 6) { // HDR_TYPE_HDR10_PLUS = 6
+                                willStreamHdr = true;
+                                LimeLog.info("Display supports HDR10+");
+                                break;
+                            }
                         }
                     }
 
                     if (!willStreamHdr) {
                         // Nope, no HDR for us :(
-                        Toast.makeText(this, "Display does not support HDR10", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "Display does not support HDR10 or HDR10+", Toast.LENGTH_LONG).show();
                     }
                 }
                 else {
@@ -751,24 +757,77 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         float displayRefreshRate = prepareDisplayForRendering(currentDisplay);
         
         // If auto refresh rate is enabled, override with the measured refresh rate
+        boolean autoRefreshRateFound = false;
         if (prefConfig.autoRefreshRate) {
             float autoRefreshRate = RefreshRatePreference.getCurrentRefreshRateSync(this);
             if (autoRefreshRate > 0) {
                 displayRefreshRate = autoRefreshRate;
-                // Show toast with the found refresh rate
-                final float finalRefreshRate = autoRefreshRate;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        String message = String.format(Locale.getDefault(), 
-                            getString(R.string.toast_auto_refresh_rate_found), finalRefreshRate);
-                        Toast.makeText(Game.this, message, Toast.LENGTH_SHORT).show();
-                    }
-                });
+                autoRefreshRateFound = true;
             }
         }
         
         LimeLog.info("Display refresh rate: "+displayRefreshRate);
+        
+        // Show detailed toast with all stream information if auto refresh rate was found
+        if (autoRefreshRateFound) {
+            // Determine HDR type
+            String hdrType = "NÃO";
+            if (willStreamHdr) {
+                // Check if HDR10+ is supported
+                boolean hdr10PlusSupported = false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    Display.HdrCapabilities hdrCaps = currentDisplay.getHdrCapabilities();
+                    if (hdrCaps != null) {
+                        for (int hdrTypeValue : hdrCaps.getSupportedHdrTypes()) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && hdrTypeValue == 6) { // HDR_TYPE_HDR10_PLUS = 6
+                                hdr10PlusSupported = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                hdrType = hdr10PlusSupported ? "HDR+" : "HDR";
+            }
+            
+            // Determine codec based on user preference and what's actually supported
+            String codec = "H.264";
+            if (prefConfig.videoFormat == PreferenceConfiguration.FormatOption.FORCE_AV1 && decoderRenderer.isAv1Supported()) {
+                codec = "AV1";
+            } else if (prefConfig.videoFormat == PreferenceConfiguration.FormatOption.FORCE_HEVC && decoderRenderer.isHevcSupported()) {
+                codec = "HEVC";
+            } else {
+                // Auto mode - check what's available (prefer AV1 > HEVC > H.264)
+                if ((supportedVideoFormats & MoonBridge.VIDEO_FORMAT_MASK_AV1) != 0) {
+                    codec = "AV1";
+                } else if ((supportedVideoFormats & MoonBridge.VIDEO_FORMAT_MASK_H265) != 0) {
+                    codec = "HEVC";
+                }
+            }
+            
+            // Build toast message
+            final String finalHdrType = hdrType;
+            final String finalCodec = codec;
+            final float finalRefreshRate = displayRefreshRate;
+            final int finalWidth = displayWidth;
+            final int finalHeight = displayHeight;
+            
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    String message;
+                    if (!finalHdrType.equals("NÃO")) {
+                        message = String.format(Locale.getDefault(), 
+                            "%dx%d %.0ffps %s %s",
+                            finalWidth, finalHeight, finalRefreshRate, finalHdrType, finalCodec);
+                    } else {
+                        message = String.format(Locale.getDefault(), 
+                            "%dx%d %.0ffps %s",
+                            finalWidth, finalHeight, finalRefreshRate, finalCodec);
+                    }
+                    Toast.makeText(Game.this, message, Toast.LENGTH_LONG).show();
+                }
+            });
+        }
 
         // If the user requested frame pacing using a capped FPS, we will need to change our
         // desired FPS setting here in accordance with the active display refresh rate.
