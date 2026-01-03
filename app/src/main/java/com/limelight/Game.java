@@ -1842,6 +1842,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         // Destroy the capture provider
         inputCaptureProvider.destroy();
         streamContainer.onDestroy();
+        
+        // Limpar completamente o listener de mudanças de refresh rate
+        // Garante que todos os recursos sejam liberados (thread, handlers, etc)
+        RefreshRatePreference.cleanupDisplayChangeListener();
     }
 
     @Override
@@ -3542,6 +3546,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         if (connecting || connected) {
             connecting = connected = false;
             updatePipAutoEnter();
+            
+            // Remover listener de mudanças de refresh rate quando o stream parar
+            // Evita vazamentos de memória e processamento desnecessário
+            RefreshRatePreference.unregisterDisplayChangeListener();
 
             controllerHandler.stop();
 
@@ -3768,6 +3776,12 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 // Log início do stream quando a conexão é estabelecida
                 // Este log marca o momento em que o stream realmente começou
                 StreamDebugLogger.info(StreamDebugLogger.TAG_STREAM, "Stream started");
+                
+                // Registrar listener para detectar mudanças de refresh rate em runtime
+                // Este listener permite recalcular o FPS automaticamente quando a taxa do display mudar
+                if (prefConfig.autoRefreshRate) {
+                    RefreshRatePreference.registerDisplayChangeListener(getApplicationContext());
+                }
                 
                 if (spinner != null) {
                     spinner.dismiss();
