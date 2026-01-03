@@ -7,14 +7,52 @@
     android:layout_height="match_parent"
     tools:context=".PcView">
 
+    <LinearLayout
+        android:id="@+id/refreshRateContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/settingsButton"
+        android:layout_toRightOf="@+id/settingsButton"
+        android:layout_toEndOf="@+id/settingsButton"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:background="#1A1A1A">
+
+        <CheckBox
+            android:id="@+id/autoRefreshRateCheckbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/title_auto_refresh_rate"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/refreshRateText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginLeft="12dp"
+            android:text="@string/refresh_rate_unavailable"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
     <RelativeLayout
         android:id="@+id/pcFragmentContainer"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:layout_below="@+id/settingsButton"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
+        android:layout_below="@+id/refreshRateContainer"
+        android:layout_toRightOf="@+id/settingsButton"
+        android:layout_toEndOf="@+id/settingsButton"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
@@ -70,7 +108,7 @@
         android:scaleType="fitXY"
         android:layout_alignParentTop="true"
         android:layout_toRightOf="@+id/settingsButton"
-        android:layout_toEndOf="@+id/profilesButton"
+        android:layout_toEndOf="@+id/settingsButton"
         android:src="@drawable/ic_help"
         android:preferKeepClear="true"
         style="?android:attr/borderlessButtonStyle"/>
@@ -87,6 +125,7 @@
         android:src="@drawable/ic_add"
         android:preferKeepClear="true"
         style="?android:attr/borderlessButtonStyle"/>
+
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/profilesButton"

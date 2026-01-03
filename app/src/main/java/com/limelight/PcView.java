@@ -26,6 +26,7 @@ import com.limelight.ui.AdapterFragment;
 import com.limelight.ui.AdapterFragmentCallbacks;
 import com.limelight.utils.Dialog;
 import com.limelight.utils.HelpLauncher;
+import com.limelight.utils.RefreshRateDisplayHelper;
 import com.limelight.utils.ServerHelper;
 import com.limelight.utils.ShortcutHelper;
 import com.limelight.utils.UiHelper;
@@ -55,12 +56,16 @@ import android.view.View.OnClickListener;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+
+import android.content.SharedPreferences;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
@@ -78,6 +83,9 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
     private boolean freezeUpdates, runningPolling, inForeground, completeOnCreateCalled;
     private ComputerDetails.AddressTuple pendingPairingAddress;
     private String pendingPairingPin, pendingPairingPassphrase;
+    private RefreshRateDisplayHelper refreshRateDisplayHelper;
+    private CheckBox autoRefreshRateCheckbox;
+    private TextView refreshRateText;
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder binder) {
             final ComputerManagerService.ComputerManagerBinder localBinder =
@@ -204,6 +212,26 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
             noPcFoundLayout.setVisibility(View.INVISIBLE);
         }
         pcGridAdapter.notifyDataSetChanged();
+
+        // Setup refresh rate display and checkbox
+        refreshRateText = findViewById(R.id.refreshRateText);
+        autoRefreshRateCheckbox = findViewById(R.id.autoRefreshRateCheckbox);
+        
+        if (refreshRateText != null && autoRefreshRateCheckbox != null) {
+            refreshRateDisplayHelper = new RefreshRateDisplayHelper(refreshRateText);
+            
+            // Load current preference state
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            boolean autoRefreshRateEnabled = prefs.getBoolean("checkbox_auto_refresh_rate", false);
+            autoRefreshRateCheckbox.setChecked(autoRefreshRateEnabled);
+            
+            // Setup checkbox listener
+            autoRefreshRateCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean("checkbox_auto_refresh_rate", isChecked);
+                editor.apply();
+            });
+        }
     }
 
     @Override
@@ -362,6 +390,12 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
     public void onDestroy() {
         super.onDestroy();
 
+        // Stop refresh rate display
+        if (refreshRateDisplayHelper != null) {
+            refreshRateDisplayHelper.stop();
+            refreshRateDisplayHelper = null;
+        }
+
         if (managerBinder != null) {
             unbindService(serviceConnection);
         }
@@ -376,6 +410,11 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
 
         refreshProfileButton();
 
+        // Start refresh rate display
+        if (refreshRateDisplayHelper != null) {
+            refreshRateDisplayHelper.start();
+        }
+
         inForeground = true;
         startComputerUpdates();
     }
@@ -383,6 +422,11 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
     @Override
     protected void onPause() {
         super.onPause();
+
+        // Stop refresh rate display
+        if (refreshRateDisplayHelper != null) {
+            refreshRateDisplayHelper.stop();
+        }
 
         inForeground = false;
         stopComputerUpdates(false);
