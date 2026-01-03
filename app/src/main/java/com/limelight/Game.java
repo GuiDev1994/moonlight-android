@@ -42,6 +42,7 @@ import com.limelight.preferences.PreferenceConfiguration;
 import com.limelight.preferences.RefreshRatePreference;
 import com.limelight.profiles.ProfilesManager;
 import com.limelight.ui.ExternalControllerView;
+import com.limelight.debug.StreamDebugLogger;
 import com.limelight.ui.GameGestures;
 import com.limelight.ui.StreamContainer;
 import com.limelight.utils.Dialog;
@@ -768,6 +769,12 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         
         LimeLog.info("Display refresh rate: "+displayRefreshRate);
         
+        // Log display refresh rate detection (somente quando houver variação ou na inicialização)
+        // Este log captura a taxa de atualização real detectada do display
+        StreamDebugLogger.info(StreamDebugLogger.TAG_DISPLAY, 
+            String.format(Locale.US, "Detected refresh rate: %.2f Hz (DisplayId=%d)", 
+                displayRefreshRate, currentDisplay.getDisplayId()));
+        
         // Show detailed toast with all stream information if auto refresh rate was found
         if (autoRefreshRateFound) {
             // Determine HDR type
@@ -864,6 +871,12 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         float launchRefreshRate = prefConfig.autoRefreshRate && displayRefreshRate > 0 
             ? displayRefreshRate 
             : prefConfig.fps;
+        
+        // Log FPS final escolhido para o stream e diferença com Hz real
+        // Este log captura a decisão final de FPS e o delta em relação à taxa de atualização do display
+        float fpsDelta = chosenFrameRate - displayRefreshRate;
+        StreamDebugLogger.info(StreamDebugLogger.TAG_DISPLAY,
+            String.format(Locale.US, "FPS set to %.0f (delta=%+.2f)", chosenFrameRate, fpsDelta));
         
         StreamConfiguration config = new StreamConfiguration.Builder()
                 .setResolution(
@@ -3752,6 +3765,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                // Log início do stream quando a conexão é estabelecida
+                // Este log marca o momento em que o stream realmente começou
+                StreamDebugLogger.info(StreamDebugLogger.TAG_STREAM, "Stream started");
+                
                 if (spinner != null) {
                     spinner.dismiss();
                     spinner = null;

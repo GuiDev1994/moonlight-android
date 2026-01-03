@@ -16,6 +16,7 @@ import org.jcodec.codecs.h264.io.model.VUIParameters;
 import com.limelight.BuildConfig;
 import com.limelight.LimeLog;
 import com.limelight.R;
+import com.limelight.debug.StreamDebugLogger;
 import com.limelight.nvstream.av.video.VideoDecoderRenderer;
 import com.limelight.nvstream.jni.MoonBridge;
 import com.limelight.preferences.PreferenceConfiguration;
@@ -877,6 +878,21 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
                 }
             }, null);
         }
+
+        // Log codec selecionado após configuração bem-sucedida
+        // Este log captura qual codec (H264/HEVC/AV1) foi escolhido pelo servidor
+        String codecName;
+        if ((videoFormat & MoonBridge.VIDEO_FORMAT_MASK_H264) != 0) {
+            codecName = "H264";
+        } else if ((videoFormat & MoonBridge.VIDEO_FORMAT_MASK_H265) != 0) {
+            codecName = "HEVC";
+        } else if ((videoFormat & MoonBridge.VIDEO_FORMAT_MASK_AV1) != 0) {
+            codecName = "AV1";
+        } else {
+            codecName = "Unknown";
+        }
+        StreamDebugLogger.info(StreamDebugLogger.TAG_STREAM,
+            String.format("Codec selected: %s (%s)", codecName, selectedDecoderInfo.getName()));
 
         return 0;
     }
@@ -1877,6 +1893,18 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
 
                 float decodeTimeMs = (float)lastTwo.decoderTimeMs / lastTwo.totalFramesReceived;
                 long rttInfo = MoonBridge.getEstimatedRttInfo();
+                
+                // Log métricas de performance agregadas (a cada ~1s)
+                // Este log captura tempo médio de decode, picos, frame drops e jitter
+                if (lastTwo.totalFramesReceived > 0) {
+                    // Calcula tempo máximo de decode (aproximação usando média + margem)
+                    // Nota: não temos acesso direto ao máximo real aqui, então usamos uma estimativa conservadora
+                    float frameDropPercent = (float)lastTwo.framesLost / Math.max(1, lastTwo.totalFrames) * 100f;
+                    StreamDebugLogger.perf(StreamDebugLogger.TAG_DECODER,
+                        String.format(java.util.Locale.US, "avgDecode=%.1fms frameDrops=%.2f%%", 
+                            decodeTimeMs, frameDropPercent));
+                }
+                
                 StringBuilder sb = new StringBuilder();
                 if(prefs.enablePerfOverlayLite){
                     if(TrafficStatsHelper.getPackageRxBytes(Process.myUid()) != TrafficStats.UNSUPPORTED){

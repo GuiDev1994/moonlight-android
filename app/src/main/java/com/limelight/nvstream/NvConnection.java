@@ -32,6 +32,7 @@ import javax.crypto.SecretKey;
 import org.xmlpull.v1.XmlPullParserException;
 
 import com.limelight.LimeLog;
+import com.limelight.debug.StreamDebugLogger;
 import com.limelight.nvstream.av.audio.AudioRenderer;
 import com.limelight.nvstream.av.video.VideoDecoderRenderer;
 import com.limelight.nvstream.http.ComputerDetails;
@@ -281,6 +282,18 @@ public class NvConnection {
             context.negotiatedWidth = context.streamConfig.getWidth();
             context.negotiatedHeight = context.streamConfig.getHeight();
         }
+
+        // Log resolução final negociada e HDR após negociação com o servidor
+        // Este log captura a resolução final que será usada no stream (pode ser diferente da solicitada)
+        StreamDebugLogger.info(StreamDebugLogger.TAG_STREAM,
+            String.format(java.util.Locale.US, "Negotiated resolution: %dx%d", 
+                context.negotiatedWidth, context.negotiatedHeight));
+        
+        // Log status HDR após negociação
+        int bitDepth = (context.negotiatedHdr) ? 10 : 8;
+        StreamDebugLogger.info(StreamDebugLogger.TAG_STREAM,
+            String.format("HDR: %s, Bit depth: %d bits", 
+                context.negotiatedHdr ? "enabled" : "disabled", bitDepth));
 
         // We will perform some connection type detection if the caller asked for it
         if (context.streamConfig.getRemote() == StreamConfiguration.STREAM_CFG_AUTO) {
