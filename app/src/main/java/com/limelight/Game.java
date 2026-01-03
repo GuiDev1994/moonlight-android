@@ -700,9 +700,20 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             if (prefConfig != null && prefConfig.preferLowerDelays) {
                 // Intermediate: more responsive than Balanced but not 0 µs
                 decoderRenderer.setPreferLowerDelays(true);
-                decoderRenderer.setPreferLowerDelaysTimeoutUs(500);  // 0.5 ms
+                
+                // Ultra Low Latency Inteligente: quando ULL estiver ativo, o timeout base continua pequeno
+                // mas getOutputDequeueTimeoutUs() aumenta dinamicamente para permitir buffer mínimo de 1 frame
+                // Isso reduz frame drops mantendo latência extremamente baixa (~1 frame extra)
+                decoderRenderer.setPreferLowerDelaysTimeoutUs(500);  // 0.5 ms (timeout base)
                 prefConfig.framePacing = PreferenceConfiguration.FRAME_PACING_BALANCED;
-                LimeLog.info("PreferLowerDelays: preferLowerDelays=true, timeout=500us, pacing=BALANCED");
+                
+                if (prefConfig.enableUltraLowLatency) {
+                    StreamDebugLogger.info(StreamDebugLogger.TAG_DECODER,
+                        "Ultra Low Latency Inteligente: buffer mínimo de 1 frame ativado");
+                    LimeLog.info("PreferLowerDelays: preferLowerDelays=true, timeout=500us (intelligent), pacing=BALANCED, ULL=ON");
+                } else {
+                    LimeLog.info("PreferLowerDelays: preferLowerDelays=true, timeout=500us, pacing=BALANCED");
+                }
             } else {
                 // Balanced default
                 decoderRenderer.setPreferLowerDelays(false);

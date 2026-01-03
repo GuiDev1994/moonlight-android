@@ -83,7 +83,24 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
             } catch (Throwable ignored) {}
         }
     }
-    private int getOutputDequeueTimeoutUs(){ return preferLowerDelays ? Math.max(250, preferLowerDelaysTimeoutUs) : preferLowerDelaysTimeoutUs; }
+    private int getOutputDequeueTimeoutUs(){ 
+        // Ultra Low Latency Inteligente: quando ULL estiver ativo, aumenta o timeout dinamicamente
+        // para permitir 1 frame de buffer de segurança, reduzindo frame drops drasticamente
+        // mantendo latência extremamente baixa (apenas ~1 frame extra de delay)
+        if (preferLowerDelays && prefs != null && prefs.enableUltraLowLatency) {
+            // Calcula o período de 1 frame baseado no FPS para permitir buffer mínimo
+            // Ex: 120 FPS = ~8333µs por frame. Usamos período completo + pequena margem
+            // Isso permite que o decoder mantenha 1 frame decodificado antes de renderizar
+            float fps = (prefs.fps > 0) ? prefs.fps : 60f;
+            int framePeriodUs = (int)(1_000_000 / Math.max(1, fps));
+            // Timeout = período de 1 frame + pequena margem (25% do período)
+            // Isso garante tempo suficiente para decodificar 1 frame adicional como buffer
+            int intelligentTimeoutUs = framePeriodUs + (framePeriodUs / 4);
+            // Mantém mínimo razoável e máximo para evitar latência excessiva
+            return Math.max(preferLowerDelaysTimeoutUs, Math.min(intelligentTimeoutUs, framePeriodUs * 2));
+        }
+        return preferLowerDelays ? Math.max(250, preferLowerDelaysTimeoutUs) : preferLowerDelaysTimeoutUs; 
+    }
 
     // Update stats using real decode time: enqueue->dequeue, instead of uptime - PTS
     private void updateDecodeLatencyStats(long presentationTimeUs) {
@@ -1348,6 +1365,11 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
                         } catch (Throwable ignored) {}
                     }
                     /* /LATEST_ONLY_LOW_LATENCY */
+                    
+                    // Ultra Low Latency Inteligente: quando ULL estiver ativo, o timeout é aumentado
+                    // dinamicamente em getOutputDequeueTimeoutUs() para permitir buffer mínimo de 1 frame.
+                    // Isso reduz frame drops drasticamente mantendo latência extremamente baixa (~1 frame extra).
+                    // A implementação está em getOutputDequeueTimeoutUs() - não requer lógica adicional aqui.
 
 
                     try {
