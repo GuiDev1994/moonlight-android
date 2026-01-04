@@ -20,6 +20,7 @@ import com.limelight.debug.StreamDebugLogger;
 import com.limelight.nvstream.av.video.VideoDecoderRenderer;
 import com.limelight.nvstream.jni.MoonBridge;
 import com.limelight.preferences.PreferenceConfiguration;
+import com.limelight.preferences.RefreshRatePreference;
 import com.limelight.utils.Stereo3DRenderer;
 import com.limelight.utils.TrafficStatsHelper;
 
@@ -202,6 +203,14 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
     private String minDecodeTimeFullLog = "";
 
     private long lastNetDataNum;
+    private long previousTimeMillis = 0;
+    private long previousRxBytes = 0;
+    private String lastValidBandwidth = null;
+    
+    // Real-time refresh rate detection (like Gamebooster/GPU Watch)
+    private long lastChoreographerFrameTimeNanos = 0;
+    private float realTimeRefreshRate = 0f;
+    
     private LinkedBlockingQueue<Integer> outputBufferQueue = new LinkedBlockingQueue<>();
     private static final int OUTPUT_BUFFER_QUEUE_LIMIT = 2;
     private long lastRenderedFrameTimeNanos;
@@ -1192,6 +1201,23 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
             return;
         }
 
+        // Real-time refresh rate detection (like Gamebooster/GPU Watch)
+        if (lastChoreographerFrameTimeNanos > 0) {
+            long frameIntervalNs = frameTimeNanos - lastChoreographerFrameTimeNanos;
+            if (frameIntervalNs > 0) {
+                float instantRefreshRate = 1_000_000_000f / frameIntervalNs;
+                
+                // Average over multiple frames for stability (exponential moving average)
+                if (realTimeRefreshRate == 0f) {
+                    realTimeRefreshRate = instantRefreshRate;
+                } else {
+                    // Exponential moving average for smooth updates
+                    realTimeRefreshRate = realTimeRefreshRate * 0.9f + instantRefreshRate * 0.1f;
+                }
+            }
+        }
+        lastChoreographerFrameTimeNanos = frameTimeNanos;
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             frameTimeNanos -= activity.getWindowManager().getDefaultDisplay().getAppVsyncOffsetNanos();
         }
@@ -1769,6 +1795,9 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
     @Override
     public void cleanup() {
         videoDecoder.release();
+        // Reset real-time refresh rate detection
+        lastChoreographerFrameTimeNanos = 0;
+        realTimeRefreshRate = 0f;
     }
 
     @Override
@@ -1929,40 +1958,114 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
                 
                 StringBuilder sb = new StringBuilder();
                 if(prefs.enablePerfOverlayLite){
+                    // Calculate bandwidth with time interval (like V+)
+                    String bandwidthStr = null;
                     if(TrafficStatsHelper.getPackageRxBytes(Process.myUid()) != TrafficStats.UNSUPPORTED){
-                        long netData=TrafficStatsHelper.getPackageRxBytes(Process.myUid())+TrafficStatsHelper.getPackageTxBytes(Process.myUid());
-                        if(lastNetDataNum!=0){
-                            sb.append(context.getString(R.string.perf_overlay_lite_bandwidth) + ": ");
-                            float realtimeNetData=(netData-lastNetDataNum)/1024f;
-                            if(realtimeNetData>=1000){
-                                sb.append(String.format("%.2f", realtimeNetData/1024f) +"M/s\t ");
-                            }else{
-                                sb.append(String.format("%.2f", realtimeNetData) +"K/s\t ");
+                        long currentRxBytes = TrafficStatsHelper.getPackageRxBytes(Process.myUid()) + TrafficStatsHelper.getPackageTxBytes(Process.myUid());
+                        long timeMillis = SystemClock.uptimeMillis();
+                        long timeMillisInterval = timeMillis - previousTimeMillis;
+                        
+                        // Only calculate if time interval is valid (0-5 seconds)
+                        if (previousTimeMillis == 0) {
+                            // First time - initialize but don't calculate bandwidth yet
+                            previousTimeMillis = timeMillis;
+                            previousRxBytes = currentRxBytes;
+                            bandwidthStr = null;
+                        } else if (timeMillisInterval > 0 && timeMillisInterval < 5000 && previousRxBytes > 0) {
+                            long rxBytesDifference = currentRxBytes - previousRxBytes;
+                            if (rxBytesDifference >= 0) {
+                                double speedKBps = (rxBytesDifference / 1024.0) / ((double) timeMillisInterval / 1000.0);
+                                if (speedKBps < 1024) {
+                                    bandwidthStr = String.format(java.util.Locale.US, "%.0f K/s", speedKBps);
+                                } else {
+                                    bandwidthStr = String.format(java.util.Locale.US, "%.2f M/s", speedKBps / 1024.0);
+                                }
+                                lastValidBandwidth = bandwidthStr;
+                                previousTimeMillis = timeMillis;
+                                previousRxBytes = currentRxBytes;
+                            } else {
+                                // Use last valid bandwidth if current calculation is invalid
+                                bandwidthStr = lastValidBandwidth != null ? lastValidBandwidth : null;
+                            }
+                        } else {
+                            // Use last valid bandwidth if time interval is too large
+                            bandwidthStr = lastValidBandwidth != null ? lastValidBandwidth : null;
+                            if (timeMillisInterval >= 5000 || previousTimeMillis == 0) {
+                                previousTimeMillis = timeMillis;
+                                previousRxBytes = currentRxBytes;
                             }
                         }
-                        lastNetDataNum=netData;
+                        
+                        // Update lastNetDataNum for backward compatibility
+                        lastNetDataNum = currentRxBytes;
                     }
-//                    sb.append("分辨率：");
-//                    sb.append(initialWidth + "x" + initialHeight);
-                    sb.append(context.getString(R.string.perf_overlay_lite_network_decoding_delay) + ": ");
-                    sb.append(context.getString(R.string.perf_overlay_lite_net,(int)(rttInfo >> 32)));
-                    sb.append(" / ");
-                    sb.append(context.getString(R.string.perf_overlay_lite_dectime,decodeTimeMs));
-                    sb.append("\t");
-                    sb.append(context.getString(R.string.perf_overlay_lite_packet_loss) + ": ");
-                    sb.append(context.getString(R.string.perf_overlay_lite_netdrops,(float)lastTwo.framesLost / lastTwo.totalFrames * 100));
-                    sb.append("\t FPS：");
-                    sb.append(context.getString(R.string.perf_overlay_lite_fps, fps.totalFps));
+                    
+                    // Build Lite status line with icons (like V+): Bandwidth / Network / Decode / Packet Loss / FPS / Refresh Rate / HDR
+                    // Bandwidth with network icon
+                    if (bandwidthStr != null) {
+                        sb.append("🌐 ");
+                        sb.append(bandwidthStr);
+                        sb.append("  ");
+                    }
+                    
+                    // Network latency / Decode latency with decode icon
+                    String decodeIcon = decodeTimeMs < 15 ? "⏱️" : "🥵";
+                    sb.append(decodeIcon);
+                    sb.append(" ");
+                    sb.append(context.getString(R.string.perf_overlay_lite_net, (int)(rttInfo >> 32)));
+                    sb.append("/");
+                    sb.append(context.getString(R.string.perf_overlay_lite_dectime, decodeTimeMs));
+                    sb.append("  ");
+                    
+                    // Packet loss with signal icon
+                    float packetLossPercent = (float)lastTwo.framesLost / Math.max(1, lastTwo.totalFrames) * 100f;
+                    sb.append("📶 ");
+                    sb.append(context.getString(R.string.perf_overlay_lite_netdrops, packetLossPercent));
+                    sb.append("  ");
+                    
+                    // FPS: Rx (received) / Rd (rendered) format like V+
+                    sb.append(String.format(java.util.Locale.US, "Rx %.0f / Rd %.0f", fps.receivedFps, fps.renderedFps));
+                    sb.append("fps");
+                    
+                    // Real-time display refresh rate (measured during streaming, like Gamebooster/GPU Watch)
+                    // Use real-time measured value if available, otherwise fallback to static value
+                    float displayRefreshRate = 0f;
+                    if (realTimeRefreshRate > 0) {
+                        // Use real-time measured refresh rate
+                        // Apply custom rounding logic (like RefreshRatePreference)
+                        if (realTimeRefreshRate >= 120.0f && realTimeRefreshRate < 121.0f) {
+                            displayRefreshRate = 120.0f;
+                        } else if (realTimeRefreshRate >= 117.0f && realTimeRefreshRate < 118.0f) {
+                            displayRefreshRate = 118.0f;
+                        } else {
+                            displayRefreshRate = Math.round(realTimeRefreshRate);
+                        }
+                    } else if (prefs.autoRefreshRate) {
+                        // Fallback to static value if real-time measurement not available yet
+                        displayRefreshRate = RefreshRatePreference.getCurrentRefreshRateSync(context);
+                    }
+                    
+                    if (displayRefreshRate > 0) {
+                        sb.append("  ");
+                        sb.append(String.format(java.util.Locale.US, "%.0f", displayRefreshRate));
+                        sb.append("Hz");
+                    }
+                    
+                    // HDR indicator (based on actual HDR metadata, like V+)
+                    if (currentHdrMetadata != null) {
+                        sb.append("  HDR");
+                    }
+                    
                     if(Stereo3DRenderer.isActive) {
-                        sb.append(" ");
+                        sb.append("  ");
                         sb.append(context.getString(R.string.perf_overlay_ai_fps));
                         sb.append(" ");
-                        sb.append(Stereo3DRenderer.threeDFps);
-                        sb.append(" ");
+                        sb.append(String.format(java.util.Locale.US, "%.0f", Stereo3DRenderer.threeDFps));
+                        sb.append("  ");
                         sb.append(context.getString(R.string.perf_overlay_ai_delegate));
                         sb.append(" ");
                         sb.append(Stereo3DRenderer.renderer);
-                        sb.append(" ");
+                        sb.append("  ");
                         sb.append(context.getString(R.string.perf_overlay_drawdelay, Stereo3DRenderer.drawDelay));
                     }
                 }else{
