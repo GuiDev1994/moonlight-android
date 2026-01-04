@@ -128,9 +128,22 @@ public class RefreshRatePreference extends Preference implements Choreographer.F
     }
 
     /**
+     * Updates the static refresh rate from an external measurement.
+     * This allows RefreshRateDisplayHelper and other components to share
+     * their measured refresh rate with getCurrentRefreshRateSync().
+     * 
+     * @param measuredRate The refresh rate measured in Hz (will be rounded)
+     */
+    public static void updateStaticRefreshRate(float measuredRate) {
+        if (measuredRate > 0) {
+            staticRefreshRate = roundRefreshRateStatic(measuredRate);
+        }
+    }
+
+    /**
      * Gets the current refresh rate synchronously.
      * If the preference has measured a refresh rate, returns that value.
-     * Otherwise, falls back to the maximum supported refresh rate from Display.
+     * Otherwise, falls back to the current refresh rate from Display.
      * 
      * @param context The context to get the display from
      * @return The refresh rate in Hz (rounded according to custom logic), or 0 if unavailable
@@ -140,38 +153,17 @@ public class RefreshRatePreference extends Preference implements Choreographer.F
             return staticRefreshRate;
         }
         
-        // Fallback to maximum display refresh rate
+        // Fallback to current display refresh rate (not maximum supported)
         try {
             WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
             if (wm != null) {
                 Display display = wm.getDefaultDisplay();
                 if (display != null) {
-                    float maxRefreshRate = display.getRefreshRate();
-                    
-                    // On Android M+, try to get the maximum refresh rate from supported modes
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        Display.Mode[] modes = display.getSupportedModes();
-                        if (modes != null && modes.length > 0) {
-                            for (Display.Mode mode : modes) {
-                                float refreshRate = mode.getRefreshRate();
-                                if (refreshRate > maxRefreshRate) {
-                                    maxRefreshRate = refreshRate;
-                                }
-                            }
-                        }
-                    } else {
-                        // On older Android versions, try to get max from supported refresh rates
-                        float[] supportedRates = display.getSupportedRefreshRates();
-                        if (supportedRates != null && supportedRates.length > 0) {
-                            for (float rate : supportedRates) {
-                                if (rate > maxRefreshRate) {
-                                    maxRefreshRate = rate;
-                                }
-                            }
-                        }
+                    // Use the current refresh rate, not the maximum supported
+                    float currentRefreshRate = display.getRefreshRate();
+                    if (currentRefreshRate > 0) {
+                        return roundRefreshRateStatic(currentRefreshRate);
                     }
-                    
-                    return roundRefreshRateStatic(maxRefreshRate);
                 }
             }
         } catch (Exception e) {

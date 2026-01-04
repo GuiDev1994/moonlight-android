@@ -6,6 +6,7 @@ import android.view.Choreographer;
 import android.widget.TextView;
 
 import com.limelight.R;
+import com.limelight.preferences.RefreshRatePreference;
 
 import java.util.Locale;
 
@@ -76,6 +77,8 @@ public class RefreshRateDisplayHelper implements Choreographer.FrameCallback {
                     float roundedRate = roundRefreshRate(currentRefreshRate);
                     String text = String.format(Locale.US, "%.0f Hz", roundedRate);
                     textView.setText(text);
+                    // Update RefreshRatePreference so getCurrentRefreshRateSync() can use this value
+                    RefreshRatePreference.updateStaticRefreshRate(currentRefreshRate);
                 } else {
                     textView.setText(textView.getContext().getString(R.string.refresh_rate_unavailable));
                 }
